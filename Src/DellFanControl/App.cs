@@ -139,28 +139,26 @@ namespace DellFanControl.DellFanControl
                     Init(context);
                 }
 
-                if (context.nextAction == (int)Global.ACTION.DISABLE)
+                switch (context.nextAction)
                 {
-                    context.nextAction = (int)Global.ACTION.WAIT;
-                    fanOneLevel = 0;
-                    fanTwoLevel = 0;
-                    fanDelayTime1 = 0;
-                    fanDelayTime2 = 0;
-                    dell_smm_io(DELL_SMM_IO_ENABLE_FAN_CTL1, DELL_SMM_IO_NO_ARG);
-                    dell_smm_io(DELL_SMM_IO_ENABLE_FAN_CTL2, DELL_SMM_IO_NO_ARG);
-                    continue;
-                }
-
-                if (context.nextAction == (int)Global.ACTION.SUSPEND)
-                {
-                    context.nextAction = (int)Global.ACTION.WAIT;
-                    fanOneLevel = 0;
-                    fanTwoLevel = 0;
-                    fanDelayTime1 = 0;
-                    fanDelayTime2 = 0;
-                    dell_smm_io(DELL_SMM_IO_ENABLE_FAN_CTL1, DELL_SMM_IO_NO_ARG);
-                    dell_smm_io(DELL_SMM_IO_ENABLE_FAN_CTL2, DELL_SMM_IO_NO_ARG);
-                    continue;
+                    case (int)Global.ACTION.DISABLE:
+                        context.nextAction = (int)Global.ACTION.WAIT;
+                        fanOneLevel = 0;
+                        fanTwoLevel = 0;
+                        fanDelayTime1 = 0;
+                        fanDelayTime2 = 0;
+                        dell_smm_io(DELL_SMM_IO_ENABLE_FAN_CTL1, DELL_SMM_IO_NO_ARG);
+                        dell_smm_io(DELL_SMM_IO_ENABLE_FAN_CTL2, DELL_SMM_IO_NO_ARG);
+                        continue;
+                    case (int)Global.ACTION.SUSPEND:
+                        context.nextAction = (int)Global.ACTION.WAIT;
+                        fanOneLevel = 0;
+                        fanTwoLevel = 0;
+                        fanDelayTime1 = 0;
+                        fanDelayTime2 = 0;
+                        dell_smm_io(DELL_SMM_IO_ENABLE_FAN_CTL1, DELL_SMM_IO_NO_ARG);
+                        dell_smm_io(DELL_SMM_IO_ENABLE_FAN_CTL2, DELL_SMM_IO_NO_ARG);
+                        continue;
                 }
 
                 tempCPU = dell_smm_io_get_cpu_temperature();
@@ -224,42 +222,37 @@ namespace DellFanControl.DellFanControl
 
                 // Fan 1
 
-                if (fanOneLevel == 0 && fanDelayTime1 == 0)
+                switch (fanOneLevel)
                 {
-                    dell_smm_io_set_fan_lv(DELL_SMM_IO_FAN1, DELL_SMM_IO_FAN_LV0);
-                }
-
-                if (fanOneLevel == 1 && fanDelayTime2 == 0)
-                {
-                    fanDelayTime1 = context.config["minCooldownTime"];
-                    dell_smm_io_set_fan_lv(DELL_SMM_IO_FAN1, DELL_SMM_IO_FAN_LV1);
-                }
-
-                if (fanOneLevel == 2)
-                {
-                    fanDelayTime2 = context.config["minCooldownTime"];
-                    dell_smm_io_set_fan_lv(DELL_SMM_IO_FAN1, DELL_SMM_IO_FAN_LV2);
+                    case 0 when fanDelayTime1 == 0:
+                        dell_smm_io_set_fan_lv(DELL_SMM_IO_FAN1, DELL_SMM_IO_FAN_LV0);
+                        break;
+                    case 1 when fanDelayTime2 == 0:
+                        fanDelayTime1 = context.config["minCooldownTime"];
+                        dell_smm_io_set_fan_lv(DELL_SMM_IO_FAN1, DELL_SMM_IO_FAN_LV1);
+                        break;
+                    case 2:
+                        fanDelayTime2 = context.config["minCooldownTime"];
+                        dell_smm_io_set_fan_lv(DELL_SMM_IO_FAN1, DELL_SMM_IO_FAN_LV2);
+                        break;
                 }
 
                 // Fan 2
 
-                if (fanTwoLevel == 0 && fanDelayTime1 == 0)
+                switch (fanTwoLevel)
                 {
-                    dell_smm_io_set_fan_lv(DELL_SMM_IO_FAN2, DELL_SMM_IO_FAN_LV0);
+                    case 0 when fanDelayTime1 == 0:
+                        dell_smm_io_set_fan_lv(DELL_SMM_IO_FAN2, DELL_SMM_IO_FAN_LV0);
+                        break;
+                    case 1 when fanDelayTime2 == 0:
+                        fanDelayTime1 = context.config["minCooldownTime"];
+                        dell_smm_io_set_fan_lv(DELL_SMM_IO_FAN2, DELL_SMM_IO_FAN_LV1);
+                        break;
+                    case 2:
+                        fanDelayTime2 = context.config["minCooldownTime"];
+                        dell_smm_io_set_fan_lv(DELL_SMM_IO_FAN2, DELL_SMM_IO_FAN_LV2);
+                        break;
                 }
-
-                if (fanTwoLevel == 1 && fanDelayTime2 == 0)
-                {
-                    fanDelayTime1 = context.config["minCooldownTime"];
-                    dell_smm_io_set_fan_lv(DELL_SMM_IO_FAN2, DELL_SMM_IO_FAN_LV1);
-                }
-
-                if (fanTwoLevel == 2)
-                {
-                    fanDelayTime2 = context.config["minCooldownTime"];
-                    dell_smm_io_set_fan_lv(DELL_SMM_IO_FAN2, DELL_SMM_IO_FAN_LV2);
-                }
-
             }
 
             Interop.CloseHandle(hDriver);
@@ -313,20 +306,15 @@ namespace DellFanControl.DellFanControl
         public void BDSID_StartDriver()
         {
             IntPtr hSCManager = Interop.OpenSCManager(null, null, (uint)Interop.SCM_ACCESS.SC_MANAGER_ALL_ACCESS);
-            if (hSCManager != IntPtr.Zero)
-            {
-                IntPtr hService = Interop.OpenService(hSCManager, "BZHDELLSMMIO", Interop.SERVICE_ALL_ACCESS);
+            if (hSCManager == IntPtr.Zero) return;
+            IntPtr hService = Interop.OpenService(hSCManager, "BZHDELLSMMIO", Interop.SERVICE_ALL_ACCESS);
 
-                Interop.CloseServiceHandle(hSCManager);
+            Interop.CloseServiceHandle(hSCManager);
 
-                if (hService != IntPtr.Zero)
-                {
-
-                    Interop.StartService(hService, 0, null); // || GetLastError() == ERROR_SERVICE_ALREADY_RUNNING;
-                    Console.WriteLine(Interop.GetLastError());
-                    Interop.CloseServiceHandle(hService);
-                }
-            }
+            if (hService == IntPtr.Zero) return;
+            Interop.StartService(hService, 0, null); // || GetLastError() == ERROR_SERVICE_ALREADY_RUNNING;
+            Console.WriteLine(Interop.GetLastError());
+            Interop.CloseServiceHandle(hService);
         }
 
         private uint dell_smm_io_get_cpu_temperature()
@@ -444,19 +432,15 @@ namespace DellFanControl.DellFanControl
 
             IntPtr hSCManager = Interop.OpenSCManager(null, null, (uint)Interop.SCM_ACCESS.SC_MANAGER_ALL_ACCESS);
 
-            if (hSCManager != IntPtr.Zero)
-            {
-                IntPtr hService = Interop.OpenService(hSCManager, "BZHDELLSMMIO", Interop.SERVICE_ALL_ACCESS);
+            if (hSCManager == IntPtr.Zero) return;
+            IntPtr hService = Interop.OpenService(hSCManager, "BZHDELLSMMIO", Interop.SERVICE_ALL_ACCESS);
 
-                Interop.CloseServiceHandle(hSCManager);
+            Interop.CloseServiceHandle(hSCManager);
 
-                if (hService != IntPtr.Zero)
-                {
-                    Interop.ControlService(hService, Interop.SERVICE_CONTROL.STOP, ref serviceStatus);
+            if (hService == IntPtr.Zero) return;
+            Interop.ControlService(hService, Interop.SERVICE_CONTROL.STOP, ref serviceStatus);
 
-                    Interop.CloseServiceHandle(hService);
-                }
-            }
+            Interop.CloseServiceHandle(hService);
         }
 
         private void BDSID_Shutdown()
