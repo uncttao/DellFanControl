@@ -12,10 +12,9 @@ namespace DellFanControl.DellFanControl
     public static class Global
     {
 
-        public enum ACTION : int
+        public enum ACTION
         {
             NONE = 0,
-            INIT = 1,
             ENABLE = 2,
             DISABLE = 3,
             SUSPEND = 5,
@@ -38,7 +37,7 @@ namespace DellFanControl.DellFanControl
             if (!File.Exists(".confirmed"))
             {
                 var confirmResult = MessageBox.Show(
-                    String.Join(
+                    string.Join(
                         Environment.NewLine,
                         "This programm takes over the DELL fan conrol",
                         "and disables the internal thermal fan management!",
@@ -54,7 +53,7 @@ namespace DellFanControl.DellFanControl
 
                 if (confirmResult == DialogResult.Cancel)
                 {
-                    Program.Quit();
+                    Quit();
                     return;
                 }
 
@@ -62,13 +61,13 @@ namespace DellFanControl.DellFanControl
             }
 
             // all other exceptions
-            Application.ThreadException += new ThreadExceptionEventHandler(Program.OnThreadException);
-            AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(Program.OnUnhandledException);
+            Application.ThreadException += OnThreadException;
+            AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
 
             // see https://stackoverflow.com/a/10579614, must be called before Appplication.Run();
-            AppDomain.CurrentDomain.ProcessExit += new EventHandler(Program.OnApplicationExit);
-            Application.ApplicationExit += new EventHandler(Program.OnApplicationExit);
-            SystemEvents.SessionEnding += new SessionEndingEventHandler(Program.OnSessionEnding);
+            AppDomain.CurrentDomain.ProcessExit += OnApplicationExit;
+            Application.ApplicationExit += OnApplicationExit;
+            SystemEvents.SessionEnding += OnSessionEnding;
 
             // see https://stackoverflow.com/a/406473
             Application.EnableVisualStyles();
@@ -82,7 +81,7 @@ namespace DellFanControl.DellFanControl
             Application.Exit();
         }
 
-        public static void OnApplicationExit(object sender, EventArgs e)
+        private static void OnApplicationExit(object sender, EventArgs e)
         {
             // Remove custom fan control on Logout/Shutdown
             appContext.nextAction = (int)Global.ACTION.DISABLE;
@@ -90,21 +89,21 @@ namespace DellFanControl.DellFanControl
             Thread.Sleep(1500);
         }
 
-        public static void OnSessionEnding(object sender, SessionEndingEventArgs e)
+        private static void OnSessionEnding(object sender, SessionEndingEventArgs e)
         {
             // Remove custom fan control on Logout/Shutdown
             appContext.nextAction = (int)Global.ACTION.DISABLE;
             Thread.Sleep(1500);
         }
 
-        static void OnThreadException(object sender, ThreadExceptionEventArgs e)
+        private static void OnThreadException(object sender, ThreadExceptionEventArgs e)
         {
             appContext.nextAction = (int)Global.ACTION.DISABLE;
             appContext.driverRunning = false;
             Thread.Sleep(1500);
         }
 
-        static void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
+        private static void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
             appContext.nextAction = (int)Global.ACTION.DISABLE;
             appContext.driverRunning = false;
@@ -116,12 +115,11 @@ namespace DellFanControl.DellFanControl
     public class DellFanControlApplicationContext : ApplicationContext
     {
 
-        public NotifyIcon trayIcon;
-        public Thread notifyThread;
+        public readonly NotifyIcon trayIcon;
         public int nextAction;
-        public Boolean driverRunning = true;
+        public bool driverRunning = true;
 
-        public Dictionary<string, int> config = new Dictionary<string, int>()
+        public readonly Dictionary<string, int> config = new Dictionary<string, int>()
         {
             {"pollingInterval", 1000}, // milliseconds
             {"minCooldownTime", 120}, // seconds
@@ -143,16 +141,16 @@ namespace DellFanControl.DellFanControl
 
         public DellFanControlApplicationContext()
         {
-            SystemEvents.PowerModeChanged += new PowerModeChangedEventHandler(OnPowerModeChanged);
+            SystemEvents.PowerModeChanged += OnPowerModeChanged;
 
             // Initialize tray icon
-            this.trayIcon = new NotifyIcon()
+            trayIcon = new NotifyIcon()
             {
-                Icon = global::DellFanControl.Properties.Resources.AppIcon,
-                ContextMenu = new ContextMenu(new MenuItem[] {
-                new MenuItem ("Enable Custom Fan Control", this.ContextMenuActionEnableFanControl),
-                new MenuItem ("Disable Custom Fan Control", this.ContextMenuActionDisableFanControl),
-                new MenuItem ("Exit", this.Exit),
+                Icon = Properties.Resources.AppIcon,
+                ContextMenu = new ContextMenu(new[] {
+                    new MenuItem ("Enable Custom Fan Control", ContextMenuActionEnableFanControl),
+                    new MenuItem ("Disable Custom Fan Control", ContextMenuActionDisableFanControl),
+                    new MenuItem ("Exit", Exit),
                 }),
                 Visible = true
             };
@@ -161,51 +159,50 @@ namespace DellFanControl.DellFanControl
             try
             {
                 XmlDocument doc = new XmlDocument();
-                doc.Load(System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) + "\\config.xml");
-                this.config["pollingInterval"] = Int32.Parse(doc.DocumentElement.Attributes["pollingInterval"].Value);
-                this.config["minCooldownTime"] = Int32.Parse(doc.DocumentElement.Attributes["minCooldownTime"].Value);
-                this.config["fanOneActive"] = Int32.Parse(doc.DocumentElement.SelectSingleNode("/DellFanCtrl/FanOne").Attributes["active"].Value);
-                this.config["fanTwoActive"] = Int32.Parse(doc.DocumentElement.SelectSingleNode("/DellFanCtrl/FanTwo").Attributes["active"].Value);
-                this.config["FanOneCPUTemperatureThresholdZero"] = Int32.Parse(doc.DocumentElement.SelectSingleNode("/DellFanCtrl/FanOne/TemperatureThresholdZero").Attributes["CPU"].Value);
-                this.config["FanOneCPUTemperatureThresholdOne"] = Int32.Parse(doc.DocumentElement.SelectSingleNode("/DellFanCtrl/FanOne/TemperatureThresholdOne").Attributes["CPU"].Value);
-                this.config["FanOneCPUTemperatureThresholdTwo"] = Int32.Parse(doc.DocumentElement.SelectSingleNode("/DellFanCtrl/FanOne/TemperatureThresholdTwo").Attributes["CPU"].Value);
-                this.config["FanOneGPUTemperatureThresholdZero"] = Int32.Parse(doc.DocumentElement.SelectSingleNode("/DellFanCtrl/FanOne/TemperatureThresholdZero").Attributes["GPU"].Value);
-                this.config["FanOneGPUTemperatureThresholdOne"] = Int32.Parse(doc.DocumentElement.SelectSingleNode("/DellFanCtrl/FanOne/TemperatureThresholdOne").Attributes["GPU"].Value);
-                this.config["FanOneGPUTemperatureThresholdTwo"] = Int32.Parse(doc.DocumentElement.SelectSingleNode("/DellFanCtrl/FanOne/TemperatureThresholdTwo").Attributes["GPU"].Value);
-                this.config["FanTwoCPUTemperatureThresholdZero"] = Int32.Parse(doc.DocumentElement.SelectSingleNode("/DellFanCtrl/FanTwo/TemperatureThresholdZero").Attributes["CPU"].Value);
-                this.config["FanTwoCPUTemperatureThresholdOne"] = Int32.Parse(doc.DocumentElement.SelectSingleNode("/DellFanCtrl/FanTwo/TemperatureThresholdOne").Attributes["CPU"].Value);
-                this.config["FanTwoCPUTemperatureThresholdTwo"] = Int32.Parse(doc.DocumentElement.SelectSingleNode("/DellFanCtrl/FanTwo/TemperatureThresholdTwo").Attributes["CPU"].Value);
-                this.config["FanTwoGPUTemperatureThresholdZero"] = Int32.Parse(doc.DocumentElement.SelectSingleNode("/DellFanCtrl/FanTwo/TemperatureThresholdZero").Attributes["GPU"].Value);
-                this.config["FanTwoGPUTemperatureThresholdOne"] = Int32.Parse(doc.DocumentElement.SelectSingleNode("/DellFanCtrl/FanTwo/TemperatureThresholdOne").Attributes["GPU"].Value);
-                this.config["FanTwoGPUTemperatureThresholdTwo"] = Int32.Parse(doc.DocumentElement.SelectSingleNode("/DellFanCtrl/FanTwo/TemperatureThresholdTwo").Attributes["GPU"].Value);
+                doc.Load(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) + "\\config.xml");
+                config["pollingInterval"] = int.Parse(doc.DocumentElement?.Attributes["pollingInterval"].Value ?? throw new ApplicationException());
+                config["minCooldownTime"] = int.Parse(doc.DocumentElement?.Attributes["minCooldownTime"].Value);
+                config["fanOneActive"] = int.Parse(doc.DocumentElement.SelectSingleNode("/DellFanCtrl/FanOne")?.Attributes?["active"].Value ?? throw new ApplicationException());
+                config["fanTwoActive"] = int.Parse(doc.DocumentElement.SelectSingleNode("/DellFanCtrl/FanTwo")?.Attributes?["active"].Value ?? throw new ApplicationException());
+                config["FanOneCPUTemperatureThresholdZero"] = int.Parse(doc.DocumentElement.SelectSingleNode("/DellFanCtrl/FanOne/TemperatureThresholdZero")?.Attributes?["CPU"].Value ?? throw new ApplicationException());
+                config["FanOneCPUTemperatureThresholdOne"] = int.Parse(doc.DocumentElement.SelectSingleNode("/DellFanCtrl/FanOne/TemperatureThresholdOne")?.Attributes?["CPU"].Value ?? throw new ApplicationException());
+                config["FanOneCPUTemperatureThresholdTwo"] = int.Parse(doc.DocumentElement.SelectSingleNode("/DellFanCtrl/FanOne/TemperatureThresholdTwo")?.Attributes?["CPU"].Value ?? throw new ApplicationException());
+                config["FanOneGPUTemperatureThresholdZero"] = int.Parse(doc.DocumentElement.SelectSingleNode("/DellFanCtrl/FanOne/TemperatureThresholdZero")?.Attributes?["GPU"].Value ?? throw new ApplicationException());
+                config["FanOneGPUTemperatureThresholdOne"] = int.Parse(doc.DocumentElement.SelectSingleNode("/DellFanCtrl/FanOne/TemperatureThresholdOne")?.Attributes?["GPU"].Value ?? throw new ApplicationException());
+                config["FanOneGPUTemperatureThresholdTwo"] = int.Parse(doc.DocumentElement.SelectSingleNode("/DellFanCtrl/FanOne/TemperatureThresholdTwo")?.Attributes?["GPU"].Value ?? throw new ApplicationException());
+                config["FanTwoCPUTemperatureThresholdZero"] = int.Parse(doc.DocumentElement.SelectSingleNode("/DellFanCtrl/FanTwo/TemperatureThresholdZero")?.Attributes?["CPU"].Value ?? throw new ApplicationException());
+                config["FanTwoCPUTemperatureThresholdOne"] = int.Parse(doc.DocumentElement.SelectSingleNode("/DellFanCtrl/FanTwo/TemperatureThresholdOne")?.Attributes?["CPU"].Value ?? throw new ApplicationException());
+                config["FanTwoCPUTemperatureThresholdTwo"] = int.Parse(doc.DocumentElement.SelectSingleNode("/DellFanCtrl/FanTwo/TemperatureThresholdTwo")?.Attributes?["CPU"].Value ?? throw new ApplicationException());
+                config["FanTwoGPUTemperatureThresholdZero"] = int.Parse(doc.DocumentElement.SelectSingleNode("/DellFanCtrl/FanTwo/TemperatureThresholdZero")?.Attributes?["GPU"].Value ?? throw new ApplicationException());
+                config["FanTwoGPUTemperatureThresholdOne"] = int.Parse(doc.DocumentElement.SelectSingleNode("/DellFanCtrl/FanTwo/TemperatureThresholdOne")?.Attributes?["GPU"].Value ?? throw new ApplicationException());
+                config["FanTwoGPUTemperatureThresholdTwo"] = int.Parse(doc.DocumentElement.SelectSingleNode("/DellFanCtrl/FanTwo/TemperatureThresholdTwo")?.Attributes?["GPU"].Value ?? throw new ApplicationException());
             }
             catch (Exception)
             {
-                this.trayIcon.BalloonTipText = "Could not load config.xml, using default values.";
-                this.trayIcon.ShowBalloonTip(5000);
+                trayIcon.BalloonTipText = "Could not load config.xml, using default values.";
+                trayIcon.ShowBalloonTip(5000);
             }
             
             // Start driver
             Thread notifyThread = new Thread(
-                delegate ()
+                delegate()
                 {
-                    DellFanCtrl app = new DellFanCtrl(this);
-                });
-            notifyThread.IsBackground = true;
+                    DellFanCtrl _ = new DellFanCtrl(this);
+                }) {IsBackground = true};
             notifyThread.Start();
         }
 
-        void ContextMenuActionEnableFanControl(object sender, EventArgs e)
+        private void ContextMenuActionEnableFanControl(object sender, EventArgs e)
         {
-            this.nextAction = (int)Global.ACTION.ENABLE;
+            nextAction = (int)Global.ACTION.ENABLE;
         }
 
-        void ContextMenuActionDisableFanControl(object sender, EventArgs e)
+        private void ContextMenuActionDisableFanControl(object sender, EventArgs e)
         {
-            this.nextAction = (int)Global.ACTION.DISABLE;
+            nextAction = (int)Global.ACTION.DISABLE;
         }
 
-        void Exit(object sender, EventArgs e)
+        private void Exit(object sender, EventArgs e)
         {
             trayIcon.Visible = false;
             Program.Quit();
@@ -216,11 +213,15 @@ namespace DellFanControl.DellFanControl
             switch (e.Mode)
             {
                 case PowerModes.Resume:
-                    this.nextAction = (int)Global.ACTION.RESUME;
+                    nextAction = (int)Global.ACTION.RESUME;
                     break;
                 case PowerModes.Suspend:
-                    this.nextAction = (int)Global.ACTION.SUSPEND;
+                    nextAction = (int)Global.ACTION.SUSPEND;
                     break;
+                case PowerModes.StatusChange:
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
             }
         }
 
