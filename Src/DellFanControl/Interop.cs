@@ -26,23 +26,23 @@ namespace DellFanControl.DellFanControl
         public class QUERY_SERVICE_CONFIG
         {
             UInt32 dwBytesNeeded;
-            [MarshalAs(System.Runtime.InteropServices.UnmanagedType.U4)]
+            [MarshalAs(UnmanagedType.U4)]
             public UInt32 dwServiceType;
-            [MarshalAs(System.Runtime.InteropServices.UnmanagedType.U4)]
+            [MarshalAs(UnmanagedType.U4)]
             public UInt32 dwStartType;
-            [MarshalAs(System.Runtime.InteropServices.UnmanagedType.U4)]
+            [MarshalAs(UnmanagedType.U4)]
             public UInt32 dwErrorControl;
-            [MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPWStr)]
+            [MarshalAs(UnmanagedType.LPWStr)]
             public String lpBinaryPathName;
-            [MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPWStr)]
+            [MarshalAs(UnmanagedType.LPWStr)]
             public String lpLoadOrderGroup;
-            [MarshalAs(System.Runtime.InteropServices.UnmanagedType.U4)]
+            [MarshalAs(UnmanagedType.U4)]
             public UInt32 dwTagID;
-            [MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPWStr)]
+            [MarshalAs(UnmanagedType.LPWStr)]
             public String lpDependencies;
-            [MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPWStr)]
+            [MarshalAs(UnmanagedType.LPWStr)]
             public String lpServiceStartName;
-            [MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPWStr)]
+            [MarshalAs(UnmanagedType.LPWStr)]
             public String lpDisplayName;
         };
 
@@ -50,43 +50,6 @@ namespace DellFanControl.DellFanControl
         public enum SERVICE_CONTROL : uint
         {
             STOP = 0x00000001,
-            PAUSE = 0x00000002,
-            CONTINUE = 0x00000003,
-            INTERROGATE = 0x00000004,
-            SHUTDOWN = 0x00000005,
-            PARAMCHANGE = 0x00000006,
-            NETBINDADD = 0x00000007,
-            NETBINDREMOVE = 0x00000008,
-            NETBINDENABLE = 0x00000009,
-            NETBINDDISABLE = 0x0000000A,
-            DEVICEEVENT = 0x0000000B,
-            HARDWAREPROFILECHANGE = 0x0000000C,
-            POWEREVENT = 0x0000000D,
-            SESSIONCHANGE = 0x0000000E
-        }
-
-        public enum SERVICE_STATE : uint
-        {
-            SERVICE_STOPPED = 0x00000001,
-            SERVICE_START_PENDING = 0x00000002,
-            SERVICE_STOP_PENDING = 0x00000003,
-            SERVICE_RUNNING = 0x00000004,
-            SERVICE_CONTINUE_PENDING = 0x00000005,
-            SERVICE_PAUSE_PENDING = 0x00000006,
-            SERVICE_PAUSED = 0x00000007
-        }
-
-        [Flags]
-        public enum SERVICE_ACCEPT : uint
-        {
-            STOP = 0x00000001,
-            PAUSE_CONTINUE = 0x00000002,
-            SHUTDOWN = 0x00000004,
-            PARAMCHANGE = 0x00000008,
-            NETBINDCHANGE = 0x00000010,
-            HARDWAREPROFILECHANGE = 0x00000020,
-            POWEREVENT = 0x00000040,
-            SESSIONCHANGE = 0x00000080,
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -144,18 +107,17 @@ namespace DellFanControl.DellFanControl
             SC_MANAGER_MODIFY_BOOT_CONFIG
         }
 
-        public const int SERVICE_QUERY_CONFIG = 0x0001;
-        public const int SERVICE_CHANGE_CONFIG = 0x0002;
-        public const int SERVICE_QUERY_STATUS = 0x0004;
-        public const int SERVICE_ENUMERATE_DEPENDENTS = 0x0008;
-        public const int SERVICE_START = 0x0010;
-        public const int SERVICE_STOP = 0x0020;
-        public const int SERVICE_PAUSE_CONTINUE = 0x0040;
-        public const int SERVICE_INTERROGATE = 0x0080;
-        public const int SERVICE_USER_DEFINED_CONTROL = 0x0100;
-        public const int SERVICE_CONTROL_STOP = 0x00000001;
+        private const int SERVICE_QUERY_CONFIG = 0x0001;
+        private const int SERVICE_CHANGE_CONFIG = 0x0002;
+        private const int SERVICE_QUERY_STATUS = 0x0004;
+        private const int SERVICE_ENUMERATE_DEPENDENTS = 0x0008;
+        private const int SERVICE_START = 0x0010;
+        private const int SERVICE_STOP = 0x0020;
+        private const int SERVICE_PAUSE_CONTINUE = 0x0040;
+        private const int SERVICE_INTERROGATE = 0x0080;
+        private const int SERVICE_USER_DEFINED_CONTROL = 0x0100;
 
-        public const int STANDARD_RIGHTS_REQUIRED = 0xF0000;
+        private const int STANDARD_RIGHTS_REQUIRED = 0xF0000;
         public const uint SERVICE_ALL_ACCESS = STANDARD_RIGHTS_REQUIRED |
             SERVICE_QUERY_CONFIG |
             SERVICE_CHANGE_CONFIG |
@@ -170,15 +132,11 @@ namespace DellFanControl.DellFanControl
         public const int SERVICE_DEMAND_START = 0x00000003;
         public const int SERVICE_KERNEL_DRIVER = 0x00000001;
         public const int SERVICE_ERROR_NORMAL = 0x00000001;
-        public const int SERVICE_ERROR_IGNORE = 0x00000000;
 
         public const int FILE_SHARE_READ = 0x00000001;
         public const int FILE_SHARE_WRITE = 0x00000002;
-        public const int FILE_SHARE_DELETE = 0x00000004;
         public const uint GENERIC_READ = 0x80000000;
         public const uint GENERIC_WRITE = 0x40000000;
-        public const int GENERIC_EXECUTE = 0x20000000;
-        public const int GENERIC_ALL = 0x10000000;
         public const int FILE_ATTRIBUTE_NORMAL = 0x80;
         public const int OPEN_EXISTING = 3;
         public const uint BZH_DELL_SMM_IOCTL_KEY = 0xB42;
@@ -205,16 +163,6 @@ namespace DellFanControl.DellFanControl
             IntPtr hSCManager,
             string lpServiceName,
             uint dwDesiredAccess
-        );
-
-        [DllImport("advapi32.dll", SetLastError = true)]
-        [
-            return: MarshalAs(UnmanagedType.Bool)
-        ]
-        public static extern bool StartService(
-            IntPtr hService,
-            int dwNumServiceArgs,
-            string[] lpServiceArgVectors
         );
 
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
