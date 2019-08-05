@@ -33,7 +33,7 @@ namespace DellFanControl.DellFanControl
 
         private void Init(DellFanControlApplicationContext context)
         {
-            this.hDriver = Interop.CreateFile(
+            hDriver = Interop.CreateFile(
                 @"\\.\BZHDELLSMMIO",
                 Interop.GENERIC_READ | Interop.GENERIC_WRITE,
                 0,
@@ -45,7 +45,7 @@ namespace DellFanControl.DellFanControl
 
             IntPtr INVALID_HANDLE_VALUE = new IntPtr(-1);
 
-            if (this.hDriver == INVALID_HANDLE_VALUE)
+            if (hDriver == INVALID_HANDLE_VALUE)
             {
                 Console.WriteLine("notRunning");
                 BDSID_InstallDriver();
@@ -68,10 +68,10 @@ namespace DellFanControl.DellFanControl
                 while (!process.StandardOutput.EndOfStream)
                 {
                     // TODO: Catch wind64.exe errors by parsing line
-                    string line = process.StandardOutput.ReadLine();
+                    process.StandardOutput.ReadLine();
                 }
 
-                this.hDriver = Interop.CreateFile(@"\\.\BZHDELLSMMIO",
+                hDriver = Interop.CreateFile(@"\\.\BZHDELLSMMIO",
                     Interop.GENERIC_READ | Interop.GENERIC_WRITE,
                     Interop.FILE_SHARE_READ | Interop.FILE_SHARE_WRITE,
                     IntPtr.Zero,
@@ -98,10 +98,8 @@ namespace DellFanControl.DellFanControl
 
         public DellFanCtrl(DellFanControlApplicationContext context)
         {
-            this.Init(context);
+            Init(context);
 
-            uint tempCPU = 0;
-            uint tempGPU = 0;
             int fanOneLevel = 0;
             int fanTwoLevel = 0;
             int fanDelayTime1 = 0;
@@ -119,35 +117,31 @@ namespace DellFanControl.DellFanControl
                     break;
                 }
 
+                uint tempCPU;
+                uint tempGPU;
                 if (context.nextAction == (int)Global.ACTION.ENABLE)
                 {
                     context.nextAction = (int)Global.ACTION.NONE;
-                    tempCPU = 0;
-                    tempGPU = 0;
                     fanOneLevel = 0;
                     fanTwoLevel = 0;
                     fanDelayTime1 = 0;
                     fanDelayTime2 = 0;
-                    this.Init(context);
+                    Init(context);
                 }
 
                 if (context.nextAction == (int)Global.ACTION.RESUME)
                 {
                     context.nextAction = (int)Global.ACTION.NONE;
-                    tempCPU = 0;
-                    tempGPU = 0;
                     fanOneLevel = 0;
                     fanTwoLevel = 0;
                     fanDelayTime1 = 0;
                     fanDelayTime2 = 0;
-                    this.Init(context);
+                    Init(context);
                 }
 
                 if (context.nextAction == (int)Global.ACTION.DISABLE)
                 {
                     context.nextAction = (int)Global.ACTION.WAIT;
-                    tempCPU = 0;
-                    tempGPU = 0;
                     fanOneLevel = 0;
                     fanTwoLevel = 0;
                     fanDelayTime1 = 0;
@@ -160,8 +154,6 @@ namespace DellFanControl.DellFanControl
                 if (context.nextAction == (int)Global.ACTION.SUSPEND)
                 {
                     context.nextAction = (int)Global.ACTION.WAIT;
-                    tempCPU = 0;
-                    tempGPU = 0;
                     fanOneLevel = 0;
                     fanTwoLevel = 0;
                     fanDelayTime1 = 0;
@@ -270,15 +262,15 @@ namespace DellFanControl.DellFanControl
 
             }
 
-            Interop.CloseHandle(this.hDriver);
+            Interop.CloseHandle(hDriver);
             BDSID_Shutdown();
         }
 
-        private Boolean BDSID_InstallDriver()
+        private void BDSID_InstallDriver()
         {
             BDSID_RemoveDriver();
 
-            IntPtr hService = new IntPtr();
+            IntPtr hService;
 
             IntPtr hSCManager = Interop.OpenSCManager(null, null, (uint)Interop.SCM_ACCESS.SC_MANAGER_ALL_ACCESS);
             if (hSCManager != IntPtr.Zero)
@@ -291,7 +283,7 @@ namespace DellFanControl.DellFanControl
                     Interop.SERVICE_KERNEL_DRIVER,
                     Interop.SERVICE_DEMAND_START,
                     Interop.SERVICE_ERROR_NORMAL,
-                    this.getDriverPath(),
+                    getDriverPath(),
                     null,
                     null,
                     null,
@@ -305,24 +297,21 @@ namespace DellFanControl.DellFanControl
                 {
                     Console.WriteLine("hService is null");
                     Debug.Print("hService is null");
-                    return false;
+                    return;
                 }
             }
             else
             {
                 Console.WriteLine("hSCManager is null");
                 Debug.Print("hSCManager is null");
-                return false;
+                return;
             }
 
             Interop.CloseServiceHandle(hService);
-
-            return true;
         }
 
-        public Boolean BDSID_StartDriver()
+        public void BDSID_StartDriver()
         {
-            Boolean bResult;
             IntPtr hSCManager = Interop.OpenSCManager(null, null, (uint)Interop.SCM_ACCESS.SC_MANAGER_ALL_ACCESS);
             if (hSCManager != IntPtr.Zero)
             {
@@ -333,22 +322,11 @@ namespace DellFanControl.DellFanControl
                 if (hService != IntPtr.Zero)
                 {
 
-                    bResult = Interop.StartService(hService, 0, null); // || GetLastError() == ERROR_SERVICE_ALREADY_RUNNING;
+                    Interop.StartService(hService, 0, null); // || GetLastError() == ERROR_SERVICE_ALREADY_RUNNING;
                     Console.WriteLine(Interop.GetLastError());
                     Interop.CloseServiceHandle(hService);
                 }
-                else
-                {
-                    return false;
-                }
-
             }
-            else
-            {
-                return false;
-            }
-
-            return bResult;
         }
 
         private uint dell_smm_io_get_cpu_temperature()
@@ -374,7 +352,7 @@ namespace DellFanControl.DellFanControl
 
         private uint dell_smm_io(uint cmd, uint data)
         {
-            Process.GetCurrentProcess().ProcessorAffinity = (System.IntPtr)1;
+            Process.GetCurrentProcess().ProcessorAffinity = (IntPtr)1;
 
             Interop.SMBIOS_PKG cam = new Interop.SMBIOS_PKG
             {
@@ -388,7 +366,7 @@ namespace DellFanControl.DellFanControl
 
             uint result_size = 0;
 
-            bool status_dic = Interop.DeviceIoControl(this.hDriver,
+            bool status_dic = Interop.DeviceIoControl(hDriver,
                 IOCTL_BZH_DELL_SMM_RWREG,
                 ref cam,
                 (uint)Marshal.SizeOf(cam),
@@ -410,7 +388,7 @@ namespace DellFanControl.DellFanControl
             }
         }
 
-        private Boolean BDSID_RemoveDriver()
+        private void BDSID_RemoveDriver()
         {
 
             UInt32 dwBytesNeeded;
@@ -425,7 +403,7 @@ namespace DellFanControl.DellFanControl
 
             if (hSCManager != IntPtr.Zero)
             {
-                return false;
+                return;
             }
 
             IntPtr hService = Interop.OpenService(hSCManager, "BZHDELLSMMIO", Interop.SERVICE_ALL_ACCESS);
@@ -433,10 +411,10 @@ namespace DellFanControl.DellFanControl
 
             if (hService != IntPtr.Zero)
             {
-                return false;
+                return;
             }
 
-            bResult = Interop.QueryServiceConfig(hService, IntPtr.Zero, 0, out dwBytesNeeded);
+            Interop.QueryServiceConfig(hService, IntPtr.Zero, 0, out dwBytesNeeded);
 
             if (Interop.GetLastError() == Interop.ERROR_INSUFFICIENT_BUFFER)
             {
@@ -446,22 +424,20 @@ namespace DellFanControl.DellFanControl
                 if (!bResult)
                 {
                     Interop.CloseServiceHandle(hService);
-                    return bResult;
+                    return;
                 }
 
                 // If service is set to load automatically, don't delete it!
                 if (pServiceConfig.dwStartType == Interop.SERVICE_DEMAND_START)
                 {
-                    bResult = Interop.DeleteService(hService);
+                    Interop.DeleteService(hService);
                 }
             }
 
             Interop.CloseServiceHandle(hService);
-
-            return bResult;
         }
 
-        private Boolean BDSID_StopDriver()
+        private void BDSID_StopDriver()
         {
 
             Interop.SERVICE_STATUS serviceStatus = new Interop.SERVICE_STATUS();
@@ -476,30 +452,23 @@ namespace DellFanControl.DellFanControl
 
                 if (hService != IntPtr.Zero)
                 {
-                    Boolean bResult = Interop.ControlService(hService, Interop.SERVICE_CONTROL.STOP, ref serviceStatus);
+                    Interop.ControlService(hService, Interop.SERVICE_CONTROL.STOP, ref serviceStatus);
 
                     Interop.CloseServiceHandle(hService);
                 }
-                else
-                    return false;
             }
-            else
-                return false;
-
-            return true;
         }
 
-        private Boolean BDSID_Shutdown()
+        private void BDSID_Shutdown()
         {
             IntPtr INVALID_HANDLE_VALUE = new IntPtr(-1);
 
             if (hDriver != INVALID_HANDLE_VALUE)
             {
-                Interop.CloseHandle(this.hDriver);
+                Interop.CloseHandle(hDriver);
             }
 
             BDSID_RemoveDriver();
-            return false;
         }
 
         private string getDriverPath()
