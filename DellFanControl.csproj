@@ -50,7 +50,7 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup>
-    <StartupObject>DellFanControl.Program</StartupObject>
+    <StartupObject>DellFanControl.DellFanControl.Program</StartupObject>
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationIcon>Assets\AppIcon.ico</ApplicationIcon>

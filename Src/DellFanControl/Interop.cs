@@ -1,7 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace DellFanControl
+namespace DellFanControl.DellFanControl
 {
     public class Interop
     {
