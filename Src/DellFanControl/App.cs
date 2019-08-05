@@ -8,31 +8,30 @@ namespace DellFanControl
 
     class DellFanCtrl
     {
+        private IntPtr hDriver;
 
-        IntPtr hDriver;
+        private const uint DELL_SMM_IO_FAN1 = 0;
+        private const uint DELL_SMM_IO_FAN2 = 1;
 
-        public const uint DELL_SMM_IO_FAN1 = 0;
-        public const uint DELL_SMM_IO_FAN2 = 1;
+        private const uint DELL_SMM_IO_GET_SENSOR_TEMP = 0x10a3;
+        private const uint DELL_SMM_IO_SENSOR_CPU = 0; // Probably Core 1
+        private const uint DELL_SMM_IO_SENSOR_GPU = 8; // ?? how many sensors
 
-        public const uint DELL_SMM_IO_GET_SENSOR_TEMP = 0x10a3;
-        public const uint DELL_SMM_IO_SENSOR_CPU = 0; // Probably Core 1
-        public const uint DELL_SMM_IO_SENSOR_GPU = 8; // ?? how many sensors
-
-        public const uint DELL_SMM_IO_SET_FAN_LV = 0x01a3;
+        private const uint DELL_SMM_IO_SET_FAN_LV = 0x01a3;
         public const uint DELL_SMM_IO_GET_FAN_LV = 0x00a3;
         public const uint DELL_SMM_IO_GET_FAN_RPM = 0x02a3;
 
-        public const uint DELL_SMM_IO_FAN_LV0 = 0;
-        public const uint DELL_SMM_IO_FAN_LV1 = 1;
-        public const uint DELL_SMM_IO_FAN_LV2 = 2;
+        private const uint DELL_SMM_IO_FAN_LV0 = 0;
+        private const uint DELL_SMM_IO_FAN_LV1 = 1;
+        private const uint DELL_SMM_IO_FAN_LV2 = 2;
 
-        public const uint DELL_SMM_IO_DISABLE_FAN_CTL1 = 0x30a3;
-        public const uint DELL_SMM_IO_ENABLE_FAN_CTL1 = 0x31a3;
-        public const uint DELL_SMM_IO_DISABLE_FAN_CTL2 = 0x34a3;
-        public const uint DELL_SMM_IO_ENABLE_FAN_CTL2 = 0x35a3;
-        public const uint DELL_SMM_IO_NO_ARG = 0x0;
+        private const uint DELL_SMM_IO_DISABLE_FAN_CTL1 = 0x30a3;
+        private const uint DELL_SMM_IO_ENABLE_FAN_CTL1 = 0x31a3;
+        private const uint DELL_SMM_IO_DISABLE_FAN_CTL2 = 0x34a3;
+        private const uint DELL_SMM_IO_ENABLE_FAN_CTL2 = 0x35a3;
+        private const uint DELL_SMM_IO_NO_ARG = 0x0;
 
-        public void Init(DellFanControlApplicationContext context)
+        private void Init(DellFanControlApplicationContext context)
         {
             this.hDriver = Interop.CreateFile(
                 @"\\.\BZHDELLSMMIO",
@@ -275,7 +274,7 @@ namespace DellFanControl
             BDSID_Shutdown();
         }
 
-        public Boolean BDSID_InstallDriver()
+        private Boolean BDSID_InstallDriver()
         {
             BDSID_RemoveDriver();
 
@@ -352,17 +351,17 @@ namespace DellFanControl
             return bResult;
         }
 
-        public uint dell_smm_io_get_cpu_temperature()
+        private uint dell_smm_io_get_cpu_temperature()
         {
             return dell_smm_io(DELL_SMM_IO_GET_SENSOR_TEMP, DELL_SMM_IO_SENSOR_CPU);
         }
 
-        public uint dell_smm_io_get_gpu_temperature()
+        private uint dell_smm_io_get_gpu_temperature()
         {
             return dell_smm_io(DELL_SMM_IO_GET_SENSOR_TEMP, DELL_SMM_IO_SENSOR_GPU);
         }
 
-        public void dell_smm_io_set_fan_lv(uint fan_no, uint lv)
+        private void dell_smm_io_set_fan_lv(uint fan_no, uint lv)
         {
             uint arg = (lv << 8) | fan_no;
             dell_smm_io(DELL_SMM_IO_SET_FAN_LV, arg);
@@ -373,7 +372,7 @@ namespace DellFanControl
             return dell_smm_io(DELL_SMM_IO_SET_FAN_LV, fan_no);
         }
 
-        public uint dell_smm_io(uint cmd, uint data)
+        private uint dell_smm_io(uint cmd, uint data)
         {
             Process.GetCurrentProcess().ProcessorAffinity = (System.IntPtr)1;
 
@@ -411,7 +410,7 @@ namespace DellFanControl
             }
         }
 
-        public Boolean BDSID_RemoveDriver()
+        private Boolean BDSID_RemoveDriver()
         {
 
             UInt32 dwBytesNeeded;
@@ -462,7 +461,7 @@ namespace DellFanControl
             return bResult;
         }
 
-        public Boolean BDSID_StopDriver()
+        private Boolean BDSID_StopDriver()
         {
 
             Interop.SERVICE_STATUS serviceStatus = new Interop.SERVICE_STATUS();
@@ -490,7 +489,7 @@ namespace DellFanControl
             return true;
         }
 
-        public Boolean BDSID_Shutdown()
+        private Boolean BDSID_Shutdown()
         {
             IntPtr INVALID_HANDLE_VALUE = new IntPtr(-1);
 
@@ -503,7 +502,7 @@ namespace DellFanControl
             return false;
         }
 
-        public string getDriverPath()
+        private string getDriverPath()
         {
             if (Environment.Is64BitOperatingSystem)
             {
