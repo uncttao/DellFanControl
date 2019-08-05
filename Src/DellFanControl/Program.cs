@@ -4,6 +4,7 @@ using System.IO;
 using System.Threading;
 using System.Windows.Forms;
 using System.Xml;
+using DellFanControl.DellFanControl;
 using Microsoft.Win32;
 
 namespace DellFanControl

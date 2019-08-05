@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 
-namespace DellFanControl
+namespace DellFanControl.DellFanControl
 {
 
     class DellFanCtrl
