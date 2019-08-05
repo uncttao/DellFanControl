@@ -18,8 +18,6 @@ namespace DellFanControl.DellFanControl
         private const uint DELL_SMM_IO_SENSOR_GPU = 8; // ?? how many sensors
 
         private const uint DELL_SMM_IO_SET_FAN_LV = 0x01a3;
-        public const uint DELL_SMM_IO_GET_FAN_LV = 0x00a3;
-        public const uint DELL_SMM_IO_GET_FAN_RPM = 0x02a3;
 
         private const uint DELL_SMM_IO_FAN_LV0 = 0;
         private const uint DELL_SMM_IO_FAN_LV1 = 1;
@@ -117,8 +115,6 @@ namespace DellFanControl.DellFanControl
                     break;
                 }
 
-                uint tempCPU;
-                uint tempGPU;
                 if (context.nextAction == (int)Global.ACTION.ENABLE)
                 {
                     context.nextAction = (int)Global.ACTION.NONE;
@@ -161,8 +157,8 @@ namespace DellFanControl.DellFanControl
                         continue;
                 }
 
-                tempCPU = dell_smm_io_get_cpu_temperature();
-                tempGPU = dell_smm_io_get_gpu_temperature();
+                var tempCPU = dell_smm_io_get_cpu_temperature();
+                var tempGPU = dell_smm_io_get_gpu_temperature();
 
                 context.trayIcon.Text = "CPU: " + tempCPU.ToString() + "°C" + Environment.NewLine + "GPU: " + tempGPU.ToString() + "°C";
 
@@ -303,20 +299,6 @@ namespace DellFanControl.DellFanControl
             Interop.CloseServiceHandle(hService);
         }
 
-        public void BDSID_StartDriver()
-        {
-            IntPtr hSCManager = Interop.OpenSCManager(null, null, (uint)Interop.SCM_ACCESS.SC_MANAGER_ALL_ACCESS);
-            if (hSCManager == IntPtr.Zero) return;
-            IntPtr hService = Interop.OpenService(hSCManager, "BZHDELLSMMIO", Interop.SERVICE_ALL_ACCESS);
-
-            Interop.CloseServiceHandle(hSCManager);
-
-            if (hService == IntPtr.Zero) return;
-            Interop.StartService(hService, 0, null); // || GetLastError() == ERROR_SERVICE_ALREADY_RUNNING;
-            Console.WriteLine(Interop.GetLastError());
-            Interop.CloseServiceHandle(hService);
-        }
-
         private uint dell_smm_io_get_cpu_temperature()
         {
             return dell_smm_io(DELL_SMM_IO_GET_SENSOR_TEMP, DELL_SMM_IO_SENSOR_CPU);
@@ -331,11 +313,6 @@ namespace DellFanControl.DellFanControl
         {
             uint arg = (lv << 8) | fan_no;
             dell_smm_io(DELL_SMM_IO_SET_FAN_LV, arg);
-        }
-
-        public uint dell_smm_io_get_fan_lv(uint fan_no)
-        {
-            return dell_smm_io(DELL_SMM_IO_SET_FAN_LV, fan_no);
         }
 
         private uint dell_smm_io(uint cmd, uint data)
@@ -378,12 +355,7 @@ namespace DellFanControl.DellFanControl
 
         private void BDSID_RemoveDriver()
         {
-
-            UInt32 dwBytesNeeded;
-
             Interop.QUERY_SERVICE_CONFIG pServiceConfig = new Interop.QUERY_SERVICE_CONFIG();
-
-            bool bResult;
 
             BDSID_StopDriver();
 
@@ -402,12 +374,12 @@ namespace DellFanControl.DellFanControl
                 return;
             }
 
-            Interop.QueryServiceConfig(hService, IntPtr.Zero, 0, out dwBytesNeeded);
+            Interop.QueryServiceConfig(hService, IntPtr.Zero, 0, out var dwBytesNeeded);
 
             if (Interop.GetLastError() == Interop.ERROR_INSUFFICIENT_BUFFER)
             {
 
-                bResult = Interop.QueryServiceConfig(hService, pServiceConfig, dwBytesNeeded, out dwBytesNeeded);
+                var bResult = Interop.QueryServiceConfig(hService, pServiceConfig, dwBytesNeeded, out dwBytesNeeded);
 
                 if (!bResult)
                 {
